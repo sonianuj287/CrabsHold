@@ -23,6 +23,17 @@ interface ApprovalRequest {
   created_at: string
 }
 
+interface WorkflowCheckpoint {
+  id: number
+  agent_id: number
+  tool_name: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  parameters: any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  agent_state: any
+  created_at: string
+}
+
 interface Agent {
   id: number
   name: string
@@ -38,6 +49,10 @@ function App() {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
   const [agents, setAgents] = useState<Agent[]>([])
 
+  const [workflows, setWorkflows] = useState<string[]>([])
+  const [selectedWorkflow, setSelectedWorkflow] = useState<string | null>(null)
+  const [checkpoints, setCheckpoints] = useState<WorkflowCheckpoint[]>([])
+
   const fetchData = async () => {
     try {
       const logsRes = await fetch(`${API_BASE}/v1/dashboard/logs`)
@@ -51,8 +66,23 @@ function App() {
       const agentsRes = await fetch(`${API_BASE}/v1/dashboard/agents`)
       const agentsData = await agentsRes.json()
       setAgents(agentsData)
+
+      const workflowsRes = await fetch(`${API_BASE}/v1/proxy/workflows`)
+      const workflowsData = await workflowsRes.json()
+      setWorkflows(workflowsData)
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
+    }
+  }
+
+  const fetchCheckpoints = async (workflowId: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/v1/proxy/workflows/${workflowId}/checkpoints`)
+      const data = await res.json()
+      setCheckpoints(data)
+      setSelectedWorkflow(workflowId)
+    } catch (e) {
+      console.error("Failed to fetch checkpoints", e)
     }
   }
 
@@ -132,6 +162,47 @@ function App() {
             </div>
           </section>
         )}
+
+        <section className="time-travel-section">
+          <h2>⏳ Workflow Time Travel (Checkpoints)</h2>
+          <div className="workflow-controls" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '2rem' }}>
+            {workflows.map(wf => (
+              <button 
+                key={wf} 
+                className={`btn ${selectedWorkflow === wf ? 'approve' : ''}`}
+                onClick={() => fetchCheckpoints(wf)}
+              >
+                Run {wf.substring(0, 8)}...
+              </button>
+            ))}
+            {workflows.length === 0 && <p>No workflows run yet.</p>}
+          </div>
+
+          {selectedWorkflow && (
+            <div className="checkpoints-timeline">
+              <h3>Checkpoints for Run {selectedWorkflow.substring(0, 8)}...</h3>
+              <div className="timeline-container">
+                {checkpoints.map((cp, idx) => (
+                  <div key={cp.id} className="checkpoint-card" style={{ background: '#f8f9fa', padding: '1rem', borderRadius: '8px', marginBottom: '1rem', borderLeft: '4px solid #3498db' }}>
+                    <div className="checkpoint-header" style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                      <strong>Step {idx + 1}: {cp.tool_name}</strong>
+                      <span style={{ fontSize: '0.85rem', color: '#7f8c8d' }}>{new Date(cp.created_at).toLocaleTimeString()}</span>
+                    </div>
+                    <div className="checkpoint-body">
+                      <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}><strong>Parameters:</strong> <code>{JSON.stringify(cp.parameters)}</code></p>
+                      <details>
+                        <summary style={{ cursor: 'pointer', color: '#2980b9', fontWeight: 600 }}>View Agent Brain State</summary>
+                        <pre className="brain-state" style={{ background: '#2c3e50', color: '#ecf0f1', padding: '1rem', borderRadius: '4px', overflowX: 'auto', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                          {JSON.stringify(cp.agent_state, null, 2)}
+                        </pre>
+                      </details>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
 
         <section className="logs-section">
           <h2>Recent Audit Logs</h2>

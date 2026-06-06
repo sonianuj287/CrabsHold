@@ -43,3 +43,16 @@ class ApprovalRequest(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     
     agent = relationship("Agent")
+
+class WorkflowCheckpoint(Base):
+    __tablename__ = "workflow_checkpoints"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(Integer, ForeignKey("agents.id"), nullable=False)
+    workflow_run_id = Column(String, index=True, nullable=False)
+    tool_name = Column(String, nullable=False)
+    parameters = Column(JSON, nullable=True)
+    agent_state = Column(JSON, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    agent = relationship("Agent")

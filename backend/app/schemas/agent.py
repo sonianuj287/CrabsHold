@@ -6,6 +6,8 @@ class ToolCallRequest(BaseModel):
     tool_name: str = Field(description="The specific underlying tool being called")
     parameters: Optional[Dict[str, Any]] = None
     estimated_cost: Optional[int] = Field(default=0, description="Estimated token cost of this operation")
+    workflow_run_id: str = Field(description="Unique ID for the agent's workflow execution run")
+    agent_state: Optional[list[Dict[str, Any]]] = Field(default=None, description="The raw conversation history of the agent")
 
 class ExecutionResponse(BaseModel):
     status: str # 'allowed', 'blocked', 'suspended'

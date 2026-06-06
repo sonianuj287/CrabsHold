@@ -5,7 +5,7 @@ from app.db.database import get_db
 from app.schemas.agent import ToolCallRequest, ExecutionResponse, ApprovalStatusUpdate
 from app.services.policy_engine import evaluate_policy
 from app.services.audit import record_audit_log
-from app.models.governance import ApprovalRequest
+from app.models.governance import ApprovalRequest, WorkflowCheckpoint
 from app.models.identity import Agent
 
 from app.api.auth import get_current_agent
@@ -22,6 +22,17 @@ async def proxy_execute(
     The Identity-Aware Agent Gateway.
     Receives a tool call request from an agent, evaluates policies, and decides whether to allow it.
     """
+    
+    # Save a WorkflowCheckpoint
+    checkpoint = WorkflowCheckpoint(
+        agent_id=agent.id,
+        workflow_run_id=request.workflow_run_id,
+        tool_name=request.tool_name,
+        parameters=request.parameters,
+        agent_state=request.agent_state
+    )
+    db.add(checkpoint)
+    await db.commit()
     
     status, reason = await evaluate_policy(
         db=db,
@@ -101,4 +112,30 @@ async def proxy_approval(
     await db.commit()
 
     return {"message": f"Request {request_id} has been {update.status}"}
+
+@router.get("/workflows", response_model=list[str])
+async def list_workflows(db: AsyncSession = Depends(get_db)):
+    """List unique workflow runs."""
+    result = await db.execute(select(WorkflowCheckpoint.workflow_run_id).distinct())
+    return [row[0] for row in result.all()]
+
+@router.get("/workflows/{workflow_run_id}/checkpoints", response_model=list[dict])
+async def get_checkpoints(workflow_run_id: str, db: AsyncSession = Depends(get_db)):
+    """Get chronological timeline of checkpoints for a specific run."""
+    result = await db.execute(
+        select(WorkflowCheckpoint)
+        .filter(WorkflowCheckpoint.workflow_run_id == workflow_run_id)
+        .order_by(WorkflowCheckpoint.created_at.asc())
+    )
+    checkpoints = result.scalars().all()
+    return [
+        {
+            "id": cp.id,
+            "agent_id": cp.agent_id,
+            "tool_name": cp.tool_name,
+            "parameters": cp.parameters,
+            "agent_state": cp.agent_state,
+            "created_at": cp.created_at.isoformat()
+        } for cp in checkpoints
+    ]
 
