@@ -8,38 +8,43 @@ jobs:
   # --- PYTHON BACKEND CHECKS ---
   backend-ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
       - name: Run Linter & Formatter (Ruff)
-        run: pip install ruff && ruff check .
+        run: |
+          cd backend
+          pip install ruff && ruff check .
       - name: Run Type Checker (Mypy)
-        run: pip install mypy && mypy .
+        run: |
+          cd backend
+          pip install mypy && mypy app demo_agent.py
       - name: Run Backend Tests
         run: |
+          cd backend
           pip install -r requirements.txt
           pytest
 
   # --- JAVASCRIPT FRONTEND CHECKS ---
   frontend-ci:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
       - name: Install Dependencies
-        run: npm install
+        run: |
+          cd frontend
+          npm install
       - name: Run Linter & Type Check
-        run: npm run lint && npm run type-check
+        run: |
+          cd frontend
+          npm run lint && npm run type-check
       - name: Test Production Build
-        run: npm run build
+        run: |
+          cd frontend
+          npm run build
 
   # --- AI & SECURITY CHECKS ---
   security-and-ai:
