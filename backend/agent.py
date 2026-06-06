@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import time
 import requests
 from google import genai
@@ -21,17 +20,20 @@ def call_crabs_hold_proxy(action: str, tool_name: str, parameters: dict) -> dict
     We intercept the execution and check with the control plane first.
     """
     payload = {
-        "agent_id": AGENT_ID,
         "action": action,
         "tool_name": tool_name,
         "parameters": parameters,
         "estimated_cost": 50 # Mock estimated cost
     }
     
+    headers = {
+        "Authorization": "Bearer crabs_test_key_123"
+    }
+    
     print(f"\n[CrabsHold Interceptor] Forwarding tool call '{tool_name}' to Governance Proxy...")
     
     try:
-        response = requests.post(PROXY_URL, json=payload)
+        response = requests.post(PROXY_URL, json=payload, headers=headers)
         data = response.json()
         
         if response.status_code == 403:

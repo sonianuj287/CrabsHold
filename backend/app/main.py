@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
-load_dotenv()
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.proxy import router as proxy_router
 from app.api.dashboard import router as dashboard_router
+
+load_dotenv()
 
 app = FastAPI(title="CrabsHold API", description="Governance Layer Between AI Agents and Enterprise Systems")
 
