@@ -8,6 +8,9 @@ jobs:
   # --- PYTHON BACKEND CHECKS ---
   backend-ci:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
@@ -24,12 +27,15 @@ jobs:
   # --- JAVASCRIPT FRONTEND CHECKS ---
   frontend-ci:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
     steps:
       - uses: actions/checkout@v4
       - name: Set up Node.js
         uses: actions/setup-node@v4
       - name: Install Dependencies
-        run: npm ci
+        run: npm install
       - name: Run Linter & Type Check
         run: npm run lint && npm run type-check
       - name: Test Production Build
