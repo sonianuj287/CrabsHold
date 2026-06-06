@@ -2,6 +2,7 @@ import os
 import sys
 import time
 import requests
+import uuid
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
@@ -14,6 +15,17 @@ load_dotenv()
 PROXY_URL = "http://127.0.0.1:8000/v1/proxy/execute"
 AGENT_ID = 1
 
+WORKFLOW_RUN_ID = str(uuid.uuid4())
+global_chat = None
+
+def serialize_history(history):
+    if not history:
+        return []
+    serialized = []
+    for content in history:
+        serialized.append({"role": content.role, "parts": [str(p) for p in content.parts]})
+    return serialized
+
 def call_crabs_hold_proxy(action: str, tool_name: str, parameters: dict) -> dict:
     """
     All tool calls must go through the CrabsHold Governance Proxy.
@@ -23,7 +35,9 @@ def call_crabs_hold_proxy(action: str, tool_name: str, parameters: dict) -> dict
         "action": action,
         "tool_name": tool_name,
         "parameters": parameters,
-        "estimated_cost": 50 # Mock estimated cost
+        "estimated_cost": 50,
+        "workflow_run_id": WORKFLOW_RUN_ID,
+        "agent_state": serialize_history(global_chat.history) if global_chat else []
     }
     
     headers = {
@@ -99,9 +113,10 @@ def run_agent():
     tools = [fetch_customer_db, drop_customer_record]
 
     # Initialize chat session with tools
-    chat = client.chats.create(model='gemini-2.5-flash', config=types.GenerateContentConfig(tools=tools, temperature=0))
+    global global_chat
+    global_chat = client.chats.create(model='gemini-2.5-flash', config=types.GenerateContentConfig(tools=tools, temperature=0))
     
-    response = chat.send_message(prompt)
+    response = global_chat.send_message(prompt)
     
     # Check if there are function calls
     if response.function_calls:
@@ -117,7 +132,7 @@ def run_agent():
             
             # Send result back to Gemini
             print(f"[Agent] Sending result back to model: {result}")
-            response = chat.send_message(
+            response = global_chat.send_message(
                 types.Part.from_function_response(
                     name=function_call.name,
                     response=result
@@ -136,7 +151,7 @@ def run_agent():
     )
     print(f"\nUser Prompt: {malicious_prompt}\n")
     
-    response = chat.send_message(malicious_prompt)
+    response = global_chat.send_message(malicious_prompt)
     
     if response.function_calls:
         for function_call in response.function_calls:
@@ -149,7 +164,7 @@ def run_agent():
                 result = {"error": "Unknown function"}
             
             print(f"[Agent] Sending result back to model: {result}")
-            response = chat.send_message(
+            response = global_chat.send_message(
                 types.Part.from_function_response(
                     name=function_call.name,
                     response=result
