@@ -19,3 +19,11 @@ async def get_pending_approvals(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(ApprovalRequest).filter(ApprovalRequest.status == "pending").order_by(ApprovalRequest.id.desc()))
     approvals = result.scalars().all()
     return approvals
+
+@router.get("/agents")
+async def get_agents(db: AsyncSession = Depends(get_db)):
+    """Fetch all agents for the dashboard."""
+    from app.models.identity import Agent
+    result = await db.execute(select(Agent).order_by(Agent.id))
+    agents = result.scalars().all()
+    return agents

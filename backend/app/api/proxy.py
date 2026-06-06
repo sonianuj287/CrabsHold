@@ -6,12 +6,16 @@ from app.schemas.agent import ToolCallRequest, ExecutionResponse, ApprovalStatus
 from app.services.policy_engine import evaluate_policy
 from app.services.audit import record_audit_log
 from app.models.governance import ApprovalRequest
+from app.models.identity import Agent
+
+from app.api.auth import get_current_agent
 
 router = APIRouter(prefix="/v1/proxy", tags=["Proxy"])
 
 @router.post("/execute", response_model=ExecutionResponse)
 async def proxy_execute(
     request: ToolCallRequest,
+    agent: Agent = Depends(get_current_agent),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -21,7 +25,7 @@ async def proxy_execute(
     
     status, reason = await evaluate_policy(
         db=db,
-        agent_id=request.agent_id,
+        agent_id=agent.id,
         action=request.action,
         tool_name=request.tool_name,
         parameters=request.parameters,
@@ -31,7 +35,7 @@ async def proxy_execute(
     # Record the audit log for immutable traceability
     await record_audit_log(
         db=db,
-        agent_id=request.agent_id,
+        agent_id=agent.id,
         action=request.action,
         tool_name=request.tool_name,
         status=status,
@@ -46,7 +50,7 @@ async def proxy_execute(
     if status == "suspended":
         # Create an approval request
         approval_req = ApprovalRequest(
-            agent_id=request.agent_id,
+            agent_id=agent.id,
             action=request.action,
             tool_name=request.tool_name,
             parameters=request.parameters
@@ -84,6 +88,16 @@ async def proxy_approval(
         raise HTTPException(status_code=400, detail=f"Request already processed: {approval_req.status}")
 
     approval_req.status = update.status
+    
+    # If approved, boost trust score slightly
+    if update.status == "approved":
+        agent_res = await db.execute(select(Agent).filter(Agent.id == approval_req.agent_id))
+        agent = agent_res.scalars().first()
+        if agent:
+            # Cap at 100
+            agent.trust_score = min(100, agent.trust_score + 1)
+            db.add(agent)
+
     await db.commit()
 
     return {"message": f"Request {request_id} has been {update.status}"}

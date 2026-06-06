@@ -52,6 +52,65 @@ h2 {
   flex-direction: column;
 }
 
+.agent-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #3498db;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.agent-card.strict-mode {
+  border-left-color: #e74c3c;
+  background-color: #fff5f5;
+}
+
+.agent-header {
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-bottom: 1px solid #f1f3f5;
+  font-size: 1.1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.strict-badge {
+  background-color: #e74c3c;
+  color: white;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.agent-body {
+  padding: 1rem;
+  flex-grow: 1;
+}
+
+.trust-meter {
+  height: 8px;
+  background-color: #ecf0f1;
+  border-radius: 4px;
+  margin-top: 1rem;
+  overflow: hidden;
+}
+
+.trust-fill {
+  height: 100%;
+  transition: width 0.5s ease-in-out, background-color 0.5s ease-in-out;
+}
+
+.trust-text {
+  font-size: 0.85rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem !important;
+  text-align: right;
+}
+
 .card-header {
   background-color: #fffdf5;
   padding: 1rem;

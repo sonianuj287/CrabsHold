@@ -30,6 +30,9 @@ async def evaluate_policy(
 
     # 2. Check Cost limits
     if agent.token_cost_limit is not None and estimated_cost > agent.token_cost_limit:
+         agent.trust_score -= 5
+         db.add(agent)
+         await db.commit()
          return "blocked", f"Action cost {estimated_cost} exceeds limit {agent.token_cost_limit}"
 
     # 3. Fetch Policy
@@ -47,15 +50,26 @@ async def evaluate_policy(
          return "blocked", f"Policy for action '{action}' is inactive"
 
     if policy.max_token_cost is not None and estimated_cost > policy.max_token_cost:
+         agent.trust_score -= 5
+         db.add(agent)
+         await db.commit()
          return "blocked", f"Exceeds max token cost {policy.max_token_cost} for action '{action}'"
 
     # 4. Semantic Governance / Prompt Injection Scan
     is_malicious, malicious_reason = await scan_payload_for_injection(tool_name, parameters or {})
     if is_malicious:
+        agent.trust_score -= 20
+        db.add(agent)
+        await db.commit()
         return "blocked", f"Prompt Injection Detected: {malicious_reason}"
 
-    # 5. Check Human Approval
-    if policy.requires_approval:
+    # 5. Adaptive Autonomy: Check Trust Score (Strict Mode)
+    requires_approval = policy.requires_approval
+    if agent.trust_score < 50:
+         requires_approval = True # Override to force human approval for untrusted agents
+
+    # 6. Check Human Approval
+    if requires_approval:
          return "suspended", "Human approval required"
 
     return "allowed", None

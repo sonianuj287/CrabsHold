@@ -22,6 +22,8 @@ class Agent(Base):
     name = Column(String, nullable=False)
     description = Column(String)
     token_cost_limit = Column(Integer, default=1000) # For Cost Governance
+    trust_score = Column(Integer, server_default="100", nullable=False)
+    hashed_api_key = Column(String, nullable=True) # Will store sha256 hash of API key
     is_active = Column(Boolean, default=True)
     owner_id = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime(timezone=True), server_default=func.now())

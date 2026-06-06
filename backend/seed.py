@@ -1,5 +1,4 @@
 import asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.database import AsyncSessionLocal
 from app.models.identity import User, Agent
 from app.models.governance import Policy

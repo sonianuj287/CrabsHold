@@ -1,0 +1,56 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # --- PYTHON BACKEND CHECKS ---
+  backend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+      - name: Run Linter & Formatter (Ruff)
+        run: |
+          cd backend
+          pip install ruff && ruff check .
+      - name: Run Type Checker (Mypy)
+        run: |
+          cd backend
+          pip install mypy && mypy app demo_agent.py
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pytest
+
+  # --- JAVASCRIPT FRONTEND CHECKS ---
+  frontend-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+      - name: Install Dependencies
+        run: |
+          cd frontend
+          npm install
+      - name: Run Linter & Type Check
+        run: |
+          cd frontend
+          npm run lint && npm run type-check
+      - name: Test Production Build
+        run: |
+          cd frontend
+          npm run build
+
+  # --- AI & SECURITY CHECKS ---
+  security-and-ai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Scan for Leaked API Keys
+        uses: trufflesecurity/trufflehog@main
+      # Add prompt evaluation tools here if integrated (e.g., Promptfoo CLI)

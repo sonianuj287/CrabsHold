@@ -9,3 +9,6 @@ python-dotenv
 greenlet
 google-genai
 requests
+pytest
+httpx
+pytest-asyncio

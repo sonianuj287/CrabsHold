@@ -17,9 +17,18 @@ interface ApprovalRequest {
   agent_id: number
   action: string
   tool_name: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parameters: any
   status: string
   created_at: string
+}
+
+interface Agent {
+  id: number
+  name: string
+  description: string
+  trust_score: number
+  is_active: boolean
 }
 
 const API_BASE = "http://127.0.0.1:8000"
@@ -27,6 +36,7 @@ const API_BASE = "http://127.0.0.1:8000"
 function App() {
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([])
+  const [agents, setAgents] = useState<Agent[]>([])
 
   const fetchData = async () => {
     try {
@@ -37,12 +47,17 @@ function App() {
       const approvalsRes = await fetch(`${API_BASE}/v1/dashboard/approvals`)
       const approvalsData = await approvalsRes.json()
       setApprovals(approvalsData)
+      
+      const agentsRes = await fetch(`${API_BASE}/v1/dashboard/agents`)
+      const agentsData = await agentsRes.json()
+      setAgents(agentsData)
     } catch (e) {
       console.error("Failed to fetch dashboard data", e)
     }
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
     // Poll every 3 seconds for updates
     const interval = setInterval(fetchData, 3000)
@@ -70,6 +85,30 @@ function App() {
       </header>
       
       <main>
+        <section className="agents-section">
+          <h2>Active Agents & Trust Scores</h2>
+          <div className="cards-container">
+            {agents.map(agent => (
+              <div key={agent.id} className={`agent-card ${agent.trust_score < 50 ? 'strict-mode' : ''}`}>
+                <div className="agent-header">
+                  <strong>#{agent.id} {agent.name}</strong>
+                  {agent.trust_score < 50 && <span className="strict-badge">STRICT MODE</span>}
+                </div>
+                <div className="agent-body">
+                  <p>{agent.description}</p>
+                  <div className="trust-meter">
+                    <div className="trust-fill" style={{ 
+                      width: `${agent.trust_score}%`,
+                      backgroundColor: agent.trust_score < 50 ? '#e74c3c' : (agent.trust_score < 80 ? '#f39c12' : '#2ecc71')
+                    }}></div>
+                  </div>
+                  <p className="trust-text">Trust Score: <strong>{agent.trust_score}</strong> / 100</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {approvals.length > 0 && (
           <section className="approvals-section">
             <h2>⚠️ Pending Human Approvals ({approvals.length})</h2>
