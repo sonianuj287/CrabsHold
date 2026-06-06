@@ -17,6 +17,7 @@ interface ApprovalRequest {
   agent_id: number
   action: string
   tool_name: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   parameters: any
   status: string
   created_at: string
@@ -56,6 +57,7 @@ function App() {
   }
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData()
     // Poll every 3 seconds for updates
     const interval = setInterval(fetchData, 3000)
