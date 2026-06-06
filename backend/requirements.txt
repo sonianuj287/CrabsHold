@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+aiosqlite
+alembic
+pydantic
+pydantic-settings
+python-dotenv
+greenlet
+google-genai
+requests
