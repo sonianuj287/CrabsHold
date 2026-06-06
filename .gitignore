@@ -3,3 +3,5 @@ GEMINI_KEY
 __pycache__/
 *.py[cod]
 *$py.class
+frontend/node_modules/*
+/frontend/node_modules/*
